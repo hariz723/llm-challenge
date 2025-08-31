@@ -10,11 +10,21 @@ source:
 from fastapi import FastAPI, Request
 import uvicorn
 import time
+from fastapi.middleware.cors import CORSMiddleware
 
 
 from src.core.logging import logger
 
-app = FastAPI()
+app = FastAPI(title="RAG Chat API", version="1.0.0")
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.middleware("http")

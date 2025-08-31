@@ -1,0 +1,27 @@
+services:
+  ragapp:
+    build: .
+    container_name: ragapp
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_HOST=db
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    container_name: db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    volumes:
+      - ragapp_data:/var/lib/postgresql/data
+
+volumes:
+  ragapp_data:
