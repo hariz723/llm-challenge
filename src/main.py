@@ -13,7 +13,9 @@ import time
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from src.core.logging import logger
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="RAG Chat API", version="1.0.0")
 

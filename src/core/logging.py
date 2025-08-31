@@ -60,8 +60,9 @@ def setup_logging(log_level: str = "INFO", log_file: str = "src/logs/app.log"):
         logging.WARNING
     )  # Reduce uvicorn access logging
 
-    return logging.getLogger("fastapi_app")
+    # No return, just configure the root logger
 
 
-# Initialize logger
-logger = setup_logging()
+# Initialize logging
+setup_logging()
+logger = logging.getLogger(__name__)
