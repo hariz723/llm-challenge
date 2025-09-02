@@ -13,7 +13,9 @@ class Conversation(Base):
     id: Mapped[UUID] = mapped_column(
         psqlUuid(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    user_id: Mapped[UUID] = mapped_column(psqlUuid(as_uuid=True), ForeignKey("users.id"))
+    user_id: Mapped[UUID] = mapped_column(
+        psqlUuid(as_uuid=True), ForeignKey("users.id")
+    )
     title: Mapped[str] = mapped_column(String, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -27,8 +29,10 @@ class Message(Base):
     id: Mapped[UUID] = mapped_column(
         psqlUuid(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    conversation_id: Mapped[UUID] = mapped_column(psqlUuid(as_uuid=True), ForeignKey("conversations.id"))
-    sender: Mapped[str] = mapped_column(String) # e.g., "user", "bot"
+    conversation_id: Mapped[UUID] = mapped_column(
+        psqlUuid(as_uuid=True), ForeignKey("conversations.id")
+    )
+    sender: Mapped[str] = mapped_column(String)  # e.g., "user", "bot"
     content: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -41,7 +45,9 @@ class Document(Base):
     id: Mapped[UUID] = mapped_column(
         psqlUuid(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
     )
-    user_id: Mapped[UUID] = mapped_column(psqlUuid(as_uuid=True), ForeignKey("users.id"))
+    user_id: Mapped[UUID] = mapped_column(
+        psqlUuid(as_uuid=True), ForeignKey("users.id")
+    )
     filename: Mapped[str] = mapped_column(String, index=True)
     filepath: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

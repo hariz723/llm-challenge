@@ -11,9 +11,7 @@ from fastapi import FastAPI, Request
 import uvicorn
 import time
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine as create_sync_engine
 
-from src.models.database import Base, engine as async_engine
 from src.api.router import api_router
 
 import logging
