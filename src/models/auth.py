@@ -20,5 +20,3 @@ class User(Base):
 
     conversations = relationship("Conversation", back_populates="user")
     documents = relationship("Document", back_populates="user")
-
-    7341

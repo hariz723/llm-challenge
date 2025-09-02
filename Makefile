@@ -13,6 +13,8 @@ help:
 	@echo "  dev-down   - Stop the FastAPI app and remove containers"
 	@echo "  build      - Build Docker images without cache"
 	@echo "  logs       - Tail logs from Docker containers"
+	@echo "  migrations - Create a new alembic migration. Usage: make migrations \"Your migration message\""
+	@echo "  migrate    - Apply database migrations"
 	@echo "  help       - Display this help message"
 	@echo "  dev-stop   - Stop the FastAPI app"
 
@@ -63,3 +65,8 @@ dev-build:
 dev-logs:
 	@echo "📜 Tailing logs from Docker containers..."
 	docker compose logs -f
+
+migrate:
+	@echo "🛠️  Applying database migrations..."
+	$(UV) run alembic upgrade head
+	@echo "✅ Database migrations applied."
