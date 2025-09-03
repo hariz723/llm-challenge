@@ -1,8 +1,9 @@
+from asyncio.log import logger
 from uuid import UUID
 
 from fastapi import HTTPException
 from ..schemas.auth import UserCreate
-from ..core.security import create_access_token
+from ..core.security import create_access_token, verify_password
 from ..repository.auth import AuthRepository  # type: ignore
 
 
@@ -30,3 +31,15 @@ class AuthService:
             data={"sub": str(user_id), "username": username}
         )
         return access_token
+
+    async def authenticate_user(self, username: str, password: str):
+
+        user = await self.auth_repository.get_user_by_username(username)
+        logger.info(f"Authenticating user: {username}")
+
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        if not await verify_password(password=password, hashed=user.hashed_password):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        return user

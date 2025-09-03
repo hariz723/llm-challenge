@@ -18,6 +18,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db)]
 def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(session)
 
+
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 

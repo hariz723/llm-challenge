@@ -11,8 +11,8 @@ help:
 	@echo "  install    - Install all dependencies including extras"
 	@echo "  dev-run    - Run the FastAPI app using Docker Compose"
 	@echo "  dev-down   - Stop the FastAPI app and remove containers"
-	@echo "  dev-build      - Build Docker images without cache"
-	@echo "  dev-logs       - Tail logs from Docker containers"
+	@echo "  dev-build  - Build Docker images without cache"
+	@echo "  dev-logs   - Tail logs from Docker containers"
 	@echo "  migrations - Create a new alembic migration. Usage: make migrations \"Your migration message\""
 	@echo "  migrate    - Apply database migrations"
 	@echo "  help       - Display this help message"
@@ -23,6 +23,7 @@ setup:
 	@echo "⚙️  Setting up project..."
 	$(UV) venv .venv
 	$(UV) sync
+	docker compose build
 	@echo "✅ Project setup complete."
 
 # Run FastAPI app (dev mode with auto-reload)
