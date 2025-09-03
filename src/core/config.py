@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     SECRET_KEY: str
 
+    API_BASE_URL: str = "http://localhost:8000"
+
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"
     )

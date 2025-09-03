@@ -43,10 +43,11 @@ install:
 	@echo "✅ Dependencies installed."
 
 dev-run:
-	@echo "🚀 Starting FastAPI app with uvicorn in dev mode..."
+	@echo "🚀 Starting FastAPI app and Streamlit UI in dev mode..."
 	docker compose up -d
-	@echo "✅ App is running at http://localhost:8000"
-	@echo "📚 Open Swagger UI: http://localhost:8000/docs"
+	@echo "✅ FastAPI app is running at http://localhost:8000"
+	@echo "📚 Open FastAPI Swagger UI: http://localhost:8000/docs"
+	@echo "✅ Streamlit UI is running at http://localhost:8501"
 
 dev-down:
 	@echo "🛑 Stopping FastAPI app and removing containers..."

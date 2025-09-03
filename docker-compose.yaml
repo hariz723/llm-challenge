@@ -14,6 +14,22 @@ services:
     depends_on:
       - db
 
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: ragapp_ui
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./ui:/app/ui
+      - ./src:/app/src
+    depends_on:
+      - ragapp
+
   db:
     image: postgres:13
     container_name: db
