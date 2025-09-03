@@ -18,6 +18,7 @@ async def register(user: UserCreate, auth_service: AuthServiceDep):
     Creates a new user in the database and returns
     a JSON response containing the user's ID and an access token.
     """
+
     db_user = await auth_service.register_new_user(user)
 
     return UserRegisterResponse(
@@ -33,6 +34,12 @@ async def register(user: UserCreate, auth_service: AuthServiceDep):
 
 @router.post("/login", response_model=UserLoginResponse)
 async def login(user: UserLogin, auth_service: AuthServiceDep):
+    """
+    Logs in a user, given a `UserLogin` object.
+    Authenticates the user credentials against the database,
+    and returns a JSON response containing an access token
+    if the credentials are valid.
+    """
 
     db_user = await auth_service.authenticate_user(
         username=user.username, password=user.password
