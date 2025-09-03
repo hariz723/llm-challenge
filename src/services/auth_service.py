@@ -8,8 +8,8 @@ from ..repository.auth import AuthRepository  # type: ignore
 
 class AuthService:
 
-    def __init__(self):
-        self.auth_repository = AuthRepository()
+    def __init__(self, session):
+        self.auth_repository = AuthRepository(session)
 
     async def register_new_user(self, user_data: UserCreate):
         db_user_by_username = await self.auth_repository.get_user_by_username(

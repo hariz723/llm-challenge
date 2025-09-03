@@ -6,12 +6,19 @@ from ..models.auth import User
 from ..core.config import settings
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Annotated
-from .core.logging import logger
+from ..core.logging import logger
+from ..services.auth_service import AuthService
 
 
 security = HTTPBearer()
 
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
+
+
+def get_auth_service(session: SessionDep) -> AuthService:
+    return AuthService(session)
+
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
 async def get_current_user(

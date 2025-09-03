@@ -3,11 +3,11 @@ from pathlib import Path
 import sys
 
 
-def setup_logging(log_level: str = "INFO", log_file: str = "/src/logs/app.log"):
+def setup_logging(log_level: str = "INFO", log_file: str = "src/logs/app.log"):
     """Setup logging configuration with standard formatting"""
 
     # Create logs directory
-    Path("/src/logs").mkdir(exist_ok=True)
+    Path("src/logs").mkdir(exist_ok=True)
 
     class ColoredFormatter(logging.Formatter):
         COLOR_CODES = {
@@ -65,4 +65,5 @@ def setup_logging(log_level: str = "INFO", log_file: str = "/src/logs/app.log"):
 
 # Initialize logging
 setup_logging()
+
 logger = logging.getLogger(__name__)

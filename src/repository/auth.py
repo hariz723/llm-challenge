@@ -7,8 +7,8 @@ from ..core.security import hash_password
 
 class AuthRepository:
 
-    def __init__(self):
-        self.db = AsyncSession
+    def __init__(self, session: AsyncSession):
+        self.db = session
 
     async def get_user_by_username(self, username: str):
         result = await self.db.execute(select(User).filter(User.username == username))
