@@ -10,6 +10,7 @@ COPY pyproject.toml uv.lock* ./
 # Install dependencies
 RUN pip install --no-cache-dir .
 
+ENV PYTHONPATH=/app/src
 # Copy the rest of the application code
 COPY . .
 

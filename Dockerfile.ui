@@ -4,6 +4,8 @@ FROM python:3.13-slim
 # Set the working directory in the container
 WORKDIR /app
 
+ENV PYTHONPATH=/app/src
+
 # Copy the dependency files
 COPY pyproject.toml uv.lock* ./
 
@@ -11,11 +13,10 @@ COPY pyproject.toml uv.lock* ./
 RUN pip install --no-cache-dir .
 
 # Copy the UI application code
-COPY ui /app/ui
-COPY src /app/src
+COPY . .
 
 # Expose the port Streamlit runs on
 EXPOSE 8501
 
 # Command to run the Streamlit application
-CMD ["streamlit", "run", "ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "src/ui/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

@@ -1,8 +1,8 @@
 import streamlit as st
-from core.config import settings
-from consumer import login_user, register_user
+from src.core.config import settings
+from .consumer import login_user, register_user  # type: ignore
 
-API_BASE_URL = settings.api_base_url
+API_BASE_URL = settings.API_BASE_URL
 
 
 def login_page():
@@ -49,3 +49,7 @@ def login_page():
                     st.rerun()
                 else:
                     st.error("Registration failed")
+
+
+if __name__ == "__main__":
+    login_page()

@@ -17,6 +17,7 @@ help:
 	@echo "  migrate    - Apply database migrations"
 	@echo "  help       - Display this help message"
 	@echo "  dev-stop   - Stop the FastAPI app"
+	@echo "  dev-clean  - Clean up Docker containers, images, and volumes"
 
 # Setup project: create .venv and install deps
 setup:
@@ -72,3 +73,8 @@ migrate:
 	@echo "🛠️  Applying database migrations..."
 	$(UV) run alembic upgrade head
 	@echo "✅ Database migrations applied."
+
+dev-clean:
+	@echo "🧹 Cleaning up Docker containers, images, and volumes..."
+	docker system prune -a 
+	@echo "✅ Cleanup complete."

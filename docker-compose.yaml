@@ -1,7 +1,7 @@
 services:
   ragapp:
     build: .
-    container_name: ragapp
+    container_name: ragapp_api
     restart: always
     env_file:
       - .env
@@ -25,14 +25,13 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ./ui:/app/ui
       - ./src:/app/src
     depends_on:
       - ragapp
 
   db:
     image: postgres:13
-    container_name: db
+    container_name: ragapp_db
     restart: always
     env_file:
       - .env
