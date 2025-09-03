@@ -10,9 +10,9 @@ source:
 from fastapi import FastAPI, Request
 import uvicorn
 import time
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
-from src.api.router import api_router
+from .api.router import api_router
 
 import logging
 
@@ -22,16 +22,6 @@ app = FastAPI(title="RAG Chat API", version="1.0.0")
 
 
 app.include_router(api_router)
-
-
-# @app.on_event("startup")
-# async def startup_event():
-#     # Create tables if they don't exist
-#     # Use a synchronous engine for create_all
-#     sync_engine = create_sync_engine(str(async_engine.url))
-#     async with async_engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all, bind=sync_engine)
-#     sync_engine.dispose()
 
 
 app.add_middleware(

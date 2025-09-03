@@ -1,11 +1,7 @@
-import bcrypt
-from datetime import datetime, timedelta
-from src.core.config import settings
 import jwt
-from fastapi.security import HTTPBearer
-
-
-security = HTTPBearer()
+import bcrypt
+from .config import settings
+from datetime import datetime, timedelta
 
 
 async def hash_password(password: str) -> str:

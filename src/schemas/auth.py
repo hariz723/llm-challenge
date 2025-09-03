@@ -12,6 +12,7 @@ class UserResponse(BaseModel):
     id: UUID = Field(..., description="User ID")
     username: str = Field(..., description="Username")
     email: str = Field(..., description="Email address")
+    access_token: str = Field(..., description="Access token")
 
     class Config:
         from_attributes = True
