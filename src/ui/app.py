@@ -1,9 +1,12 @@
 import streamlit as st
 from src.core.config import settings
-from .consumer import login_user, register_user  # type: ignore
+from api_consumer import login_user, register_user
+from src.core.logging import logger
+
 
 API_BASE_URL = settings.API_BASE_URL
 
+# logger.info(f"API Base URL: {API_BASE_URL}")
 
 def login_page():
     """Login/Register page"""
@@ -17,6 +20,7 @@ def login_page():
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             submit = st.form_submit_button("Login")
+            
 
             if submit:
                 response = login_user(username, password, API_BASE_URL)
@@ -36,7 +40,11 @@ def login_page():
             username = st.text_input("Username", key="reg_username")
             email = st.text_input("Email", key="reg_email")
             password = st.text_input("Password", type="password", key="reg_password")
+            confirm_password = st.text_input("Confirm Password", type="password", key="reg_confrim_password")
             submit = st.form_submit_button("Register")
+            
+            if password != confirm_password:
+                st.error("Passwords do not match")
 
             if submit:
                 response = register_user(username, email, password, API_BASE_URL)
