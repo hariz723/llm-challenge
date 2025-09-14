@@ -1,7 +1,14 @@
 from pydantic import BaseModel
+from datetime import datetime
+from uuid import UUID
 
 
 class DocumentUploadResponse(BaseModel):
-    document_id: str
+    id: UUID
+    user_id: UUID
     filename: str
-    message: str = "Document uploaded successfully"
+    blob_url: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True  # or orm_mode = True for older Pydantic versions

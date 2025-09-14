@@ -4,7 +4,8 @@ import requests
 def login_user(username, password, api_base_url):
     """Sends a login request to the API."""
     response = requests.post(
-    f"{api_base_url}/auth/api/login", json={"username": username, "password": password}
+        f"{api_base_url}/auth/api/login",
+        json={"username": username, "password": password},
     )
     return response
 

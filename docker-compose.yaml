@@ -13,6 +13,17 @@ services:
       - POSTGRES_HOST=db
     depends_on:
       - db
+      - azurite
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    restart: always
+    ports:
+      - "10000:10000" # Blob storage
+    command: "azurite --blobHost 0.0.0.0"
+    volumes:
+      - azurite_data:/data
 
   ui:
     build:
@@ -42,3 +53,4 @@ services:
 
 volumes:
   ragapp_data:
+  azurite_data:

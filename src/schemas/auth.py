@@ -19,6 +19,15 @@ class UserRegisterResponse(BaseModel):
         from_attributes = True
 
 
+class UserResponse(BaseModel):
+    id: UUID = Field(..., description="User ID")
+    username: str = Field(..., description="Username")
+    email: str = Field(..., description="Email address")
+
+    class Config:
+        from_attributes = True
+
+
 class UserLogin(BaseModel):
     username: str = Field(..., description="Username")
     password: str = Field(..., description="Password")

@@ -1,5 +1,5 @@
 from .auth import User
-from .chat import Conversation, Message, Document
+from .models import Conversation, Message, Document
 
 __all__ = [
     "User",

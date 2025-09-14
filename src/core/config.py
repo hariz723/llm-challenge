@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # App Config settings
     app_name: str = "Chat Application"
-    admin_email: str = "annaduraihari@gmail.com"
+    admin_email: str = "annaduraihariprasanth@gmail.com"
 
     # TODO : Load more env variables here as needed
 
@@ -24,10 +24,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
 
     API_BASE_URL: str = "http://localhost:8000"
-    AZURE_CONNECTION_STRING : str = "DefaultEndpointsProtocol=http;"
-    "AccountName=devstoreaccount1;"
-    "AccountKey=Eby8vdM02xNOcqFeqCf8..."
-    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+    AZURE_STORAGE_CONNECTION_STRING: str
 
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"

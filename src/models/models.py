@@ -49,7 +49,7 @@ class Document(Base):
         psqlUuid(as_uuid=True), ForeignKey("users.id")
     )
     filename: Mapped[str] = mapped_column(String, index=True)
-    filepath: Mapped[str] = mapped_column(String)
+    blob_url: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="documents")
