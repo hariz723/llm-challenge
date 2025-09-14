@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str
 
     API_BASE_URL: str = "http://localhost:8000"
+    AZURE_CONNECTION_STRING : str = "DefaultEndpointsProtocol=http;"
+    "AccountName=devstoreaccount1;"
+    "AccountKey=Eby8vdM02xNOcqFeqCf8..."
+    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
 
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"
