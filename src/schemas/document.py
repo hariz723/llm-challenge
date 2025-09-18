@@ -8,7 +8,6 @@ class DocumentUploadResponse(BaseModel):
     user_id: UUID
     filename: str
     blob_url: str
-    created_at: datetime
 
     class Config:
         from_attributes = True  # or orm_mode = True for older Pydantic versions

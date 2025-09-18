@@ -23,7 +23,7 @@ security = HTTPBearer()
 # Define SessionDep after all necessary imports
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
 
-
+# Auth Service Dependency
 async def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(session)
 
@@ -31,19 +31,19 @@ async def get_auth_service(session: SessionDep) -> AuthService:
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
-async def get_document_repository(session: SessionDep) -> DocumentRepository:
-    return DocumentRepository(session)
-
-
-DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repository)]
-
-
+# Azure Storage Dependency
 async def get_azure_storage() -> AzureStorage:
     return AzureStorage()
 
 
 AzureStorageDep = Annotated[AzureStorage, Depends(get_azure_storage)]
 
+# Document Repository and Service Dependencies
+async def get_document_repository(session: SessionDep) -> DocumentRepository:
+    return DocumentRepository(session)
+
+
+DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repository)]
 
 async def get_document_service(
     document_repository: DocumentRepositoryDep,
@@ -56,8 +56,8 @@ DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
 
 async def get_current_user(
+    db: SessionDep,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: AsyncSession = SessionDep,
 ) -> UserResponse: # Change return type to Pydantic UserResponse
     try:
 

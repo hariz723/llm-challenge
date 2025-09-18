@@ -6,7 +6,7 @@ from fastapi import UploadFile
 
 class AzureStorage:
     def __init__(self):
-        self.connection_string = settings.AZURE_CONNECTION_STRING
+        self.connection_string = settings.AZURE_STORAGE_CONNECTION_STRING
         self.blob_service_client = BlobServiceClient.from_connection_string(
             self.connection_string
         )

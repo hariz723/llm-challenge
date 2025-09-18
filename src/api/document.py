@@ -17,5 +17,10 @@ async def upload_document(
     Uploads a document, processes it, and stores its chunks.
     """
     db_doc = await document_service.upload_document(file, current_user)
-    # Explicitly convert SQLAlchemy model to dictionary for Pydantic response
-    return DocumentUploadResponse.model_validate(db_doc)
+
+    return DocumentUploadResponse(
+        id=db_doc.id,
+        user_id=db_doc.user_id,
+        filename=db_doc.filename,
+        blob_url=db_doc.blob_url,
+    )

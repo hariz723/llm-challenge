@@ -50,9 +50,8 @@ class DocumentService:
 
     async def upload_document(self, file: UploadFile, current_user: User):
         try:
-            # Upload file to Azure Blob Storage
-            doc_id = str(uuid.uuid4())
-            blob_url = await self.azure_storage.upload_file(file, doc_id)
+        
+            blob_url = await self.azure_storage.upload_file(file, str(uuid.uuid4()))
 
             # Read file content for text extraction (after upload, as file.read() consumes the stream)
             # To re-read, we might need to rewind the file or get content from storage if it's a large file.
@@ -61,7 +60,7 @@ class DocumentService:
             # For now, I'll assume the file object can be read again or content is available.
             # A more robust solution would be to read content once and pass it around.
             # For this example, I'll re-read the file content.
-            await file.seek(0)  # Rewind the file pointer
+            await file.seek(0)
             content = await file.read()
 
             text = extract_text_from_file(content, file.filename)
@@ -73,7 +72,11 @@ class DocumentService:
             chunks = chunk_text(text)
             collection = get_or_create_collection(current_user.id)
 
-            ids = [f"{doc_id}_{i}" for i in range(len(chunks))]
+            # Generate IDs for chunks. The document ID will come from db_doc after creation.
+            # For now, use a placeholder or generate a temporary one for chunking if needed before db_doc is available.
+            # Let's use a temporary UUID for chunk IDs, and update with actual doc_id later if necessary.
+            temp_doc_uuid = uuid.uuid4()
+            ids = [f"{temp_doc_uuid}_{i}" for i in range(len(chunks))]
 
             collection.add(
                 documents=chunks,
@@ -88,11 +91,10 @@ class DocumentService:
             db_doc = await self.document_repository.create_document(
                 filename=file.filename,
                 user_id=current_user.id,
-                doc_id=doc_id,
                 blob_url=blob_url,
             )
 
-            return DocumentUploadResponse.model_validate(db_doc)
+            return db_doc
 
         except Exception as e:
             logger.error(f"Error uploading document: {e}")

@@ -1,16 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.models import Document
-
+from uuid import UUID
 
 class DocumentRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create_document(
-        self, filename: str, user_id: str, doc_id: str, blob_url: str
+        self, filename: str, user_id: UUID, blob_url: str
     ) -> Document:
         db_doc = Document(
-            filename=filename, user_id=user_id, doc_id=doc_id, blob_url=blob_url
+            filename=filename, user_id=user_id, blob_url=blob_url
         )
         self.db.add(db_doc)
         await self.db.commit()
