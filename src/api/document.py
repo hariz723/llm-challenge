@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, UploadFile, File
 from ..core.dependencies import get_current_user, DocumentServiceDep
 from ..models.auth import User
-from ..schemas.document import DocumentUploadResponse  # Import the response model
+from ..schemas.document import DocumentUploadResponse, DocumentSearchResponse
+from typing import List
 
 
 router = APIRouter()
@@ -24,3 +25,16 @@ async def upload_document(
         filename=db_doc.filename,
         blob_url=db_doc.blob_url,
     )
+
+
+@router.post("/search", response_model=List[DocumentSearchResponse])
+async def search_documents(
+    query: str,
+    document_service: DocumentServiceDep,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Searches for documents similar to the query.
+    """
+    search_results = await document_service.search_documents(query, current_user)
+    return search_results

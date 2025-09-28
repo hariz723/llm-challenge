@@ -2,6 +2,7 @@ from azure.storage.blob.aio import BlobServiceClient
 from ..core.config import settings
 from ..core.logging import logger
 from fastapi import UploadFile
+from core import constants as coon
 
 
 class AzureStorage:
@@ -10,7 +11,7 @@ class AzureStorage:
         self.blob_service_client = BlobServiceClient.from_connection_string(
             self.connection_string
         )
-        self.container_name = "documents"  # Or get from config
+        self.container_name = coon.DOCUMENTS
 
     async def upload_file(self, file: UploadFile, file_id: str) -> str:
         """

@@ -49,7 +49,5 @@ async def login(user: UserLogin, auth_service: AuthServiceDep):
         user_id=db_user.id, username=db_user.username
     )
     return UserLoginResponse(
-        access_token=access_token,
-        token_type="bearer",
-        user_id=db_user.id
+        access_token=access_token, token_type="bearer", user_id=db_user.id
     )

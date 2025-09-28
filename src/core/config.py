@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     API_BASE_URL: str = "http://localhost:8000"
     AZURE_STORAGE_CONNECTION_STRING: str
 
+    # Qdrant Config settings
+    QDRANT_HOST: str = "qdrant"
+    QDRANT_PORT: str = "6333"  # gRPC port
+
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"
     )

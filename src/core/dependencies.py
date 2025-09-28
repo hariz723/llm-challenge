@@ -1,19 +1,21 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select # Import select for async queries
+from sqlalchemy import select  # Import select for async queries
 import jwt
 from typing import Annotated
 
 # Application-specific imports
-from ..models.database import get_db # Ensure get_db is imported early
-from ..models.auth import User # SQLAlchemy User model
-from ..schemas.auth import UserResponse # Pydantic User response model
+from ..models.database import get_db  # Ensure get_db is imported early
+from ..models.auth import User  # SQLAlchemy User model
+from ..schemas.auth import UserResponse  # Pydantic User response model
 from ..core.config import settings
 from ..core.logging import logger
 from ..services.auth_service import AuthService
 from ..services.document_service import DocumentService
 from ..repository.document import DocumentRepository
 from ..storage.azure_storage import AzureStorage
+from qdrant_client import QdrantClient
+from functools import lru_cache
 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -22,6 +24,7 @@ security = HTTPBearer()
 
 # Define SessionDep after all necessary imports
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
+
 
 # Auth Service Dependency
 async def get_auth_service(session: SessionDep) -> AuthService:
@@ -38,6 +41,7 @@ async def get_azure_storage() -> AzureStorage:
 
 AzureStorageDep = Annotated[AzureStorage, Depends(get_azure_storage)]
 
+
 # Document Repository and Service Dependencies
 async def get_document_repository(session: SessionDep) -> DocumentRepository:
     return DocumentRepository(session)
@@ -45,11 +49,22 @@ async def get_document_repository(session: SessionDep) -> DocumentRepository:
 
 DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repository)]
 
+
+# Qdrant Client Dependency
+@lru_cache(maxsize=1)
+def get_qdrant_client() -> QdrantClient:
+    return QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+
+
+QdrantClientDep = Annotated[QdrantClient, Depends(get_qdrant_client)]
+
+
 async def get_document_service(
     document_repository: DocumentRepositoryDep,
     azure_storage: AzureStorageDep,
+    qdrant_client: QdrantClientDep,
 ) -> DocumentService:
-    return DocumentService(document_repository, azure_storage)
+    return DocumentService(document_repository, azure_storage, qdrant_client)
 
 
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
@@ -58,7 +73,7 @@ DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 async def get_current_user(
     db: SessionDep,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> UserResponse: # Change return type to Pydantic UserResponse
+) -> UserResponse:  # Change return type to Pydantic UserResponse
     try:
 
         payload = jwt.decode(
@@ -82,4 +97,6 @@ async def get_current_user(
         logger.info("User not found")
         raise HTTPException(status_code=401, detail="User not found")
 
-    return UserResponse.model_validate(user) # Convert SQLAlchemy User to Pydantic UserResponse
+    return UserResponse.model_validate(
+        user
+    )  # Convert SQLAlchemy User to Pydantic UserResponse

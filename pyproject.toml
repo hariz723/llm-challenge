@@ -18,6 +18,8 @@ dependencies = [
     "streamlit>=1.49.1",
     "azure-storage-blob>=12.26.0",
     "python-multipart>=0.0.20",
+    "qdrant-client>=1.15.1",
+    "sentence-transformers>=5.1.1",
 ]
 
 [dependency-groups]
