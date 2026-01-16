@@ -13,7 +13,6 @@ import time
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
 from .api.router import api_router
-
 import logging
 
 logger = logging.getLogger(__name__)

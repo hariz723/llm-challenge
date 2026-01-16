@@ -1,21 +1,22 @@
-# Use an official Python runtime as a parent image
-FROM python:3.13-slim
+FROM python:3.12-slim
 
-# Set the working directory in the container
+# RUN apt-get update && apt-get install -y \
+#     gcc \
+#     build-essential \
+#     libffi-dev \
+#     && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copy the dependency files
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock ./
 
-# Install dependencies
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir uv && \
+    uv sync
 
-ENV PYTHONPATH=/app/src
-# Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
+ENV PYTHONPATH=/app/src
+
 EXPOSE 8000
 
-# Command to run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

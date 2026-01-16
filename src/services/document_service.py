@@ -31,7 +31,6 @@ def chunk_text(text: str) -> List[str]:
     return [text[i : i + 500] for i in range(0, len(text), 500)]
 
 
-# Placeholder for embedding model (replace with actual implementation)
 def get_embedding(text: str) -> List[float]:
     return embedding_model.encode(text).tolist()
 
@@ -65,13 +64,6 @@ class DocumentService:
 
             blob_url = await self.azure_storage.upload_file(file, str(uuid.uuid4()))
 
-            # Read file content for text extraction (after upload, as file.read() consumes the stream)
-            # To re-read, we might need to rewind the file or get content from storage if it's a large file.
-            # For simplicity, assuming file.read() can be called again or content is passed.
-            # In a real scenario, you might download from blob_url or ensure file stream is reset.
-            # For now, I'll assume the file object can be read again or content is available.
-            # A more robust solution would be to read content once and pass it around.
-            # For this example, I'll re-read the file content.
             await file.seek(0)
             content = await file.read()
 

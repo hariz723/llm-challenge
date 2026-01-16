@@ -6,6 +6,7 @@ from ..schemas.auth import (
     UserLoginResponse,
 )
 from ..core.dependencies import AuthServiceDep
+import core.constants as cons
 
 
 router = APIRouter()
@@ -28,7 +29,7 @@ async def register(user: UserCreate, auth_service: AuthServiceDep):
         access_token=await auth_service.create_user_access_token(
             user_id=db_user.id, username=db_user.username
         ),
-        token_type="bearer",
+        token_type=cons.TOKEN_TYPE,
     )
 
 
@@ -49,5 +50,5 @@ async def login(user: UserLogin, auth_service: AuthServiceDep):
         user_id=db_user.id, username=db_user.username
     )
     return UserLoginResponse(
-        access_token=access_token, token_type="bearer", user_id=db_user.id
+        access_token=access_token, token_type=cons.TOKEN_TYPE, user_id=db_user.id
     )
