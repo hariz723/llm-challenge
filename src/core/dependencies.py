@@ -7,7 +7,7 @@ from typing import Annotated
 # Application-specific imports
 from ..models.database import get_db  # Ensure get_db is imported early
 from ..models.auth import User  # SQLAlchemy User model
-from ..schemas.auth import UserResponse, CurrentUserResponse  # Pydantic User response model
+from ..schemas.auth import CurrentUserResponse  # Pydantic User response model
 from ..core.config import settings
 from ..core.logging import logger
 from ..services.auth_service import AuthService
@@ -69,6 +69,7 @@ async def get_document_service(
 
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
+
 async def get_current_user(
     db: SessionDep,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -100,5 +101,6 @@ async def get_current_user(
     return CurrentUserResponse.model_validate(
         user
     )  # Convert SQLAlchemy User to Pydantic UserResponse
+
 
 CurrentUserdep = Annotated[CurrentUserResponse, Depends(get_current_user)]

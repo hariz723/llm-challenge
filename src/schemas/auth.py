@@ -41,6 +41,7 @@ class UserLoginResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
 class CurrentUserResponse(BaseModel):
     id: UUID = Field(..., description="User ID")
     username: str = Field(..., description="Username")

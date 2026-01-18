@@ -4,7 +4,7 @@ from ..schemas.auth import (
     UserRegisterResponse,
     UserLogin,
     UserLoginResponse,
-    CurrentUserResponse
+    CurrentUserResponse,
 )
 from ..core.dependencies import AuthServiceDep, CurrentUserdep
 import core.constants as cons
@@ -53,8 +53,11 @@ async def login(user: UserLogin, auth_service: AuthServiceDep):
         access_token=access_token, token_type=cons.TOKEN_TYPE, user_id=db_user.id
     )
 
+
 @router.get("/me", response_model=CurrentUserResponse)
-async def get_current_user_info(auth_service: AuthServiceDep, current_user=CurrentUserdep):
+async def get_current_user_info(
+    auth_service: AuthServiceDep, current_user=CurrentUserdep
+):
     """
     Retrieves information about the currently authenticated user.
     Returns a JSON response containing the user's ID, username, email, and an access token.
