@@ -8,9 +8,10 @@ from ..storage.azure_storage import AzureStorage
 from ..schemas.document import DocumentSearchResponse
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
+import core.constants as cons
 
 
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+embedding_model = SentenceTransformer(cons.EMBEDDING_MODEL_NAME)
 
 
 # Placeholder for text extraction (replace with actual implementation)

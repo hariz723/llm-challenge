@@ -7,7 +7,7 @@ from typing import Annotated
 # Application-specific imports
 from ..models.database import get_db  # Ensure get_db is imported early
 from ..models.auth import User  # SQLAlchemy User model
-from ..schemas.auth import UserResponse  # Pydantic User response model
+from ..schemas.auth import UserResponse, CurrentUserResponse  # Pydantic User response model
 from ..core.config import settings
 from ..core.logging import logger
 from ..services.auth_service import AuthService
@@ -69,11 +69,10 @@ async def get_document_service(
 
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
-
 async def get_current_user(
     db: SessionDep,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> UserResponse:  # Change return type to Pydantic UserResponse
+) -> CurrentUserResponse:  # Change return type to Pydantic UserResponse
     try:
 
         payload = jwt.decode(
@@ -92,11 +91,14 @@ async def get_current_user(
 
     user = await db.execute(select(User).filter(User.username == username))
     user = user.scalar_one_or_none()
+    logger.info(f"Fetched user: {user}")
 
     if user is None:
         logger.info("User not found")
         raise HTTPException(status_code=401, detail="User not found")
 
-    return UserResponse.model_validate(
+    return CurrentUserResponse.model_validate(
         user
     )  # Convert SQLAlchemy User to Pydantic UserResponse
+
+CurrentUserdep = Annotated[CurrentUserResponse, Depends(get_current_user)]

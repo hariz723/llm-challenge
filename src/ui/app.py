@@ -1,5 +1,5 @@
 import streamlit as st
-from src.core.config import settings
+from core.config import settings
 from api_consumer import login_user, register_user
 
 

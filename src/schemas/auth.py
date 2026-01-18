@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
 
@@ -40,3 +40,12 @@ class UserLoginResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CurrentUserResponse(BaseModel):
+    id: UUID = Field(..., description="User ID")
+    username: str = Field(..., description="Username")
+    email: str = Field(..., description="Email address")
+    access_token: str = Field(..., description="Access token")
+    token_type: str = Field(..., description="Token type")
+
+    model_config = ConfigDict(from_attributes=True)
