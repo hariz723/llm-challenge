@@ -42,6 +42,14 @@ class UserLoginResponse(BaseModel):
         from_attributes = True
 
 
+class AuthenticatedUser(BaseModel):
+    id: UUID = Field(..., description="User ID")
+    username: str = Field(..., description="Username")
+    email: str = Field(..., description="Email address")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CurrentUserResponse(BaseModel):
     id: UUID = Field(..., description="User ID")
     username: str = Field(..., description="Username")

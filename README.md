@@ -7,6 +7,9 @@ This project implements a RAG (Retrieval-Augmented Generation) Chat API using Fa
 -   **FastAPI Backend**: High-performance Python web framework.
 -   **User Authentication**: Secure user management with JWT.
 -   **PostgreSQL Database**: Persistent storage for user data, conversations, and documents.
+-   **Document Ingestion**: Upload documents, extract text, chunk content, and store metadata.
+-   **Vector Retrieval**: Semantic search powered by Qdrant and `all-MiniLM-L6-v2` embeddings.
+-   **RAG Chat UI**: Streamlit interface for upload, retrieval inspection, and grounded question answering.
 -   **Docker & Docker Compose**: Containerized development and deployment for easy setup.
 -   **Alembic Migrations**: Database schema management.
 -   **Structured Project Layout**: Clear separation of concerns (API, services, repository, models, schemas, core).
@@ -95,13 +98,21 @@ The API documentation (Swagger UI) will be available at `http://localhost:8000/d
 
 ### Authentication
 
--   `/api/v1/auth/signup`: Register a new user.
--   `/api/v1/auth/login`: Authenticate and get an access token.
+-   `/auth/api/register`: Register a new user.
+-   `/auth/api/login`: Authenticate and get an access token.
+-   `/auth/api/me`: Retrieve the current user.
 
 ### Other Endpoints
 
 -   `/`: Basic health check.
--   `/api/v1/chat/`: Chat related endpoints (requires authentication).
+-   `/documents/api/upload`: Upload and index a document.
+-   `/documents/api/search`: Inspect retrieved chunks for a query.
+-   `/documents/api/chat`: Ask a grounded question over indexed documents.
+
+## Notes
+
+-   If `LLM_API_URL` and `LLM_MODEL` are configured, the app will use that chat-completions-compatible endpoint to synthesize answers from retrieved context.
+-   If those variables are omitted, the app still works with extractive fallback answers based on the top retrieved chunks.
 
 ## Development
 

@@ -11,8 +11,13 @@ from fastapi import FastAPI, Request
 import uvicorn
 import time
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+from fastapi.responses import JSONResponse
 
-from .api.router import api_router
+
+try:
+    from .api.router import api_router
+except ImportError:
+    from api.router import api_router
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,6 +26,10 @@ app = FastAPI(title="RAG Chat API", version="1.0.0")
 
 
 app.include_router(api_router)
+
+orgins = [
+    "http://localhost:8501"
+]
 
 
 app.add_middleware(
@@ -60,7 +69,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(
         f"Unhandled exception in {request.method} {request.url}: {exc}", exc_info=True
     )
-    return {"error": "Internal server error"}, 500
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error"},
+    )
 
 
 @app.get("/")

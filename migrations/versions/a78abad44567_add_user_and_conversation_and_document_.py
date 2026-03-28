@@ -59,7 +59,7 @@ def upgrade() -> None:
         ),
         sa.Column("user_id", sa.UUID(), nullable=False),
         sa.Column("filename", sa.String(), nullable=False),
-        sa.Column("filepath", sa.String(), nullable=False),
+        sa.Column("blob_url", sa.String(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
             ["user_id"],

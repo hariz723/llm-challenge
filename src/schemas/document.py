@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from uuid import UUID
+from typing import List
 
 
 class DocumentUploadResponse(BaseModel):
@@ -18,3 +19,25 @@ class DocumentSearchResponse(BaseModel):
     blob_url: str
     text: str
     score: float
+
+
+class DocumentSearchRequest(BaseModel):
+    query: str
+
+
+class RAGChatRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+
+class RAGSource(BaseModel):
+    document_id: UUID
+    filename: str
+    blob_url: str
+    text: str
+    score: float
+
+
+class RAGChatResponse(BaseModel):
+    answer: str
+    sources: List[RAGSource]

@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, UploadFile, File
 from ..core.dependencies import get_current_user, DocumentServiceDep
-from ..models.auth import User
-from ..schemas.document import DocumentUploadResponse, DocumentSearchResponse
+from ..schemas.auth import AuthenticatedUser
+from ..schemas.document import (
+    DocumentUploadResponse,
+    DocumentSearchResponse,
+    DocumentSearchRequest,
+    RAGChatRequest,
+    RAGChatResponse,
+)
 from typing import List
 
 
@@ -12,7 +18,7 @@ router = APIRouter()
 async def upload_document(
     document_service: DocumentServiceDep,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """
     Uploads a document, processes it, and stores its chunks.
@@ -29,12 +35,30 @@ async def upload_document(
 
 @router.post("/search", response_model=List[DocumentSearchResponse])
 async def search_documents(
-    query: str,
+    payload: DocumentSearchRequest,
     document_service: DocumentServiceDep,
-    current_user: User = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """
     Searches for documents similar to the query.
     """
-    search_results = await document_service.search_documents(query, current_user)
+    search_results = await document_service.search_documents(
+        payload.query, current_user
+    )
     return search_results
+
+
+@router.post("/chat", response_model=RAGChatResponse)
+async def chat_with_documents(
+    payload: RAGChatRequest,
+    document_service: DocumentServiceDep,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    """
+    Answers a question using retrieved document chunks as context.
+    """
+    return await document_service.answer_question(
+        query=payload.query,
+        current_user=current_user,
+        top_k=payload.top_k,
+    )

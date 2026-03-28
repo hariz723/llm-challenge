@@ -21,11 +21,11 @@ help:
 
 # Setup project: create .venv and install deps
 setup:
-	@echo "⚙️  Setting up project..."
-	$(UV) venv .venv
-	$(UV) sync
-	docker compose build
-	@echo "✅ Project setup complete."
+		@echo "⚙️  Setting up project..."
+		$(UV) venv .venv
+		$(UV) sync
+		docker compose build
+		@echo "✅ Project setup complete."
 
 # Run FastAPI app (dev mode with auto-reload)
 run:

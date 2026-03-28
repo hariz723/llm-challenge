@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     QDRANT_HOST: str = "qdrant"
     QDRANT_PORT: str = "6333"  # gRPC port
 
+    # Optional LLM settings for answer generation
+    LLM_API_URL: str | None = None
+    LLM_API_KEY: str | None = None
+    LLM_MODEL: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"
     )

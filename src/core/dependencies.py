@@ -7,7 +7,7 @@ from typing import Annotated
 # Application-specific imports
 from ..models.database import get_db  # Ensure get_db is imported early
 from ..models.auth import User  # SQLAlchemy User model
-from ..schemas.auth import CurrentUserResponse  # Pydantic User response model
+from ..schemas.auth import AuthenticatedUser  # Pydantic User response model
 from ..core.config import settings
 from ..core.logging import logger
 from ..services.auth_service import AuthService
@@ -53,7 +53,7 @@ DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repos
 # Qdrant Client Dependency
 @lru_cache(maxsize=1)
 def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(host=settings.QDRANT_HOST, port=settings.QDRANT_PORT)
+    return QdrantClient(host=settings.QDRANT_HOST, port=int(settings.QDRANT_PORT))
 
 
 QdrantClientDep = Annotated[QdrantClient, Depends(get_qdrant_client)]
@@ -73,15 +73,14 @@ DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 async def get_current_user(
     db: SessionDep,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> CurrentUserResponse:  # Change return type to Pydantic UserResponse
+) -> AuthenticatedUser:
     try:
-
         payload = jwt.decode(
             credentials.credentials,
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM],
         )
-        username: str = payload.get("sub")
+        username: str | None = payload.get("username")
         if username is None:
             logger.info("Invalid token")
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -98,9 +97,7 @@ async def get_current_user(
         logger.info("User not found")
         raise HTTPException(status_code=401, detail="User not found")
 
-    return CurrentUserResponse.model_validate(
-        user
-    )  # Convert SQLAlchemy User to Pydantic UserResponse
+    return AuthenticatedUser.model_validate(user)
 
 
-CurrentUserdep = Annotated[CurrentUserResponse, Depends(get_current_user)]
+CurrentUserdep = Annotated[AuthenticatedUser, Depends(get_current_user)]
