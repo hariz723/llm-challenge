@@ -4,6 +4,10 @@ A full-stack, enterprise-ready **Retrieval-Augmented Generation (RAG)** applicat
 
 Features grounded document Q&A, multi-format text ingestion (PDF, DOCX, TXT, MD, CSV, JSON), instant auto-indexing, semantic vector search, and AI answer synthesis powered by **Hugging Face** serverless inference.
 
+<p align="center">
+  <img src="images/image.png" alt="RAG Intelligence Studio UI Preview" width="100%" />
+</p>
+
 ---
 
 ## 🏗️ Architecture
