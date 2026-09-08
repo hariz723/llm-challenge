@@ -1,5 +1,11 @@
+import io
 import uuid
+from functools import lru_cache
 from typing import List
+import docx
+import numpy as np
+from pypdf import PdfReader
+from huggingface_hub import InferenceClient
 from fastapi import UploadFile, HTTPException
 from ..schemas.auth import AuthenticatedUser
 from ..core.logging import logger
@@ -13,19 +19,44 @@ from ..core.config import settings
 import requests
 
 
+@lru_cache(maxsize=1)
+def get_hf_client() -> InferenceClient | None:
+    token = settings.HUGGINGFACE_TOKEN
+    if token:
+        return InferenceClient(api_key=token)
+    return None
+
+
 embedding_model = SentenceTransformer(cons.EMBEDDING_MODEL_NAME)
 EMBEDDING_DIMENSION = embedding_model.get_sentence_embedding_dimension()
 
 
-# Placeholder for text extraction (replace with actual implementation)
 def extract_text_from_file(content: bytes, filename: str) -> str:
-    # This is a placeholder. In a real application, you'd use libraries
-    # like python-docx, pypdf, etc., based on file extension.
-    # For now, it just decodes content if it's text-like.
+    ext = filename.lower().split(".")[-1] if "." in filename else ""
     try:
-        return content.decode("utf-8")
-    except UnicodeDecodeError:
-        logger.warning(f"Could not decode {filename} as UTF-8. Returning empty string.")
+        if ext == "pdf":
+            reader = PdfReader(io.BytesIO(content))
+            pages = [page.extract_text() or "" for page in reader.pages]
+            return "\n".join(p.strip() for p in pages if p.strip())
+
+        if ext in ("docx", "doc"):
+            doc = docx.Document(io.BytesIO(content))
+            elements = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = [c.text.strip() for c in row.cells if c.text.strip()]
+                    if row_text:
+                        elements.append(" | ".join(row_text))
+            return "\n".join(elements)
+
+        # Fallback for plain text, markdown, code, json, csv, etc.
+        try:
+            return content.decode("utf-8")
+        except UnicodeDecodeError:
+            return content.decode("latin-1", errors="ignore")
+
+    except Exception as e:
+        logger.error(f"Error extracting text from {filename}: {e}")
         return ""
 
 
@@ -45,8 +76,37 @@ def chunk_text(text: str) -> List[str]:
     return [chunk for chunk in chunks if chunk]
 
 
+def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
+    if not texts:
+        return []
+
+    client = get_hf_client()
+    if client:
+        try:
+            all_vectors: List[List[float]] = []
+            batch_size = 32
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i : i + batch_size]
+                emb = client.feature_extraction(batch, model=settings.HF_EMBEDDING_MODEL)
+                arr = emb if hasattr(emb, "shape") else np.array(emb)
+                if arr.ndim == 3:
+                    arr = np.mean(arr, axis=1)
+                elif arr.ndim == 1:
+                    arr = arr.reshape(1, -1)
+                all_vectors.extend(arr.tolist())
+            return [[float(x) for x in v] for v in all_vectors]
+        except Exception as e:
+            logger.warning(
+                f"Hugging Face batch feature extraction failed ({e}). Falling back to local SentenceTransformer."
+            )
+
+    encoded = embedding_model.encode(texts, batch_size=32, show_progress_bar=False)
+    return [[float(x) for x in v] for v in encoded.tolist()]
+
+
 def get_embedding(text: str) -> List[float]:
-    return embedding_model.encode(text).tolist()
+    results = get_embeddings_batch([text])
+    return results[0] if results else []
 
 
 class DocumentService:
@@ -83,15 +143,24 @@ class DocumentService:
             return []
 
         query_embedding = get_embedding(query)
-        search_result = self.qdrant_client.search(
-            collection_name=collection_name,
-            query_vector=query_embedding,
-            limit=top_k,
-        )
+        if hasattr(self.qdrant_client, "query_points"):
+            response = self.qdrant_client.query_points(
+                collection_name=collection_name,
+                query=query_embedding,
+                limit=top_k,
+                with_payload=True,
+            )
+            hits = response.points
+        else:
+            hits = self.qdrant_client.search(
+                collection_name=collection_name,
+                query_vector=query_embedding,
+                limit=top_k,
+            )
 
         results = []
-        for hit in search_result:
-            payload = hit.payload
+        for hit in hits:
+            payload = hit.payload or {}
             results.append(
                 DocumentSearchResponse(
                     document_id=payload["document_id"],
@@ -106,9 +175,6 @@ class DocumentService:
     def _generate_answer_with_llm(
         self, query: str, search_results: List[DocumentSearchResponse]
     ) -> str | None:
-        if not settings.LLM_API_URL or not settings.LLM_MODEL:
-            return None
-
         context_blocks = []
         for idx, result in enumerate(search_results, start=1):
             context_blocks.append(
@@ -123,29 +189,64 @@ class DocumentService:
             f"Sources:\n\n{'\n\n'.join(context_blocks)}"
         )
 
-        headers = {"Content-Type": "application/json"}
-        if settings.LLM_API_KEY:
-            headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+        # 1. Try Hugging Face Inference if token is configured
+        client = get_hf_client()
+        if client:
+            try:
+                hf_model = settings.HF_CHAT_MODEL or "meta-llama/Llama-3.2-3B-Instruct"
+                response = client.chat_completion(
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are an accurate and concise RAG assistant. "
+                                "Answer the question strictly using the provided sources. "
+                                "Cite sources like [Source 1]. If not found in sources, state that clearly."
+                            ),
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    model=hf_model,
+                    temperature=0.2,
+                    max_tokens=512,
+                )
+                if response and response.choices:
+                    content = response.choices[0].message.content
+                    if content:
+                        return content.strip()
+            except Exception as e:
+                logger.error(f"Hugging Face chat completion failed: {e}")
 
-        response = requests.post(
-            settings.LLM_API_URL,
-            headers=headers,
-            json={
-                "model": settings.LLM_MODEL,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a careful RAG assistant.",
+        # 2. Try custom LLM_API_URL if configured
+        if settings.LLM_API_URL and settings.LLM_MODEL:
+            try:
+                headers = {"Content-Type": "application/json"}
+                if settings.LLM_API_KEY:
+                    headers["Authorization"] = f"Bearer {settings.LLM_API_KEY}"
+
+                response = requests.post(
+                    settings.LLM_API_URL,
+                    headers=headers,
+                    json={
+                        "model": settings.LLM_MODEL,
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a careful RAG assistant.",
+                            },
+                            {"role": "user", "content": prompt},
+                        ],
+                        "temperature": 0.2,
                     },
-                    {"role": "user", "content": prompt},
-                ],
-                "temperature": 0.2,
-            },
-            timeout=30,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        return payload["choices"][0]["message"]["content"].strip()
+                    timeout=30,
+                )
+                response.raise_for_status()
+                payload = response.json()
+                return payload["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                logger.error(f"Custom LLM API request failed: {e}")
+
+        return None
 
     def _generate_fallback_answer(
         self, query: str, search_results: List[DocumentSearchResponse]
@@ -192,14 +293,14 @@ class DocumentService:
                 blob_url=blob_url,
             )
 
+            embeddings = get_embeddings_batch(chunks)
             points = []
             for i, chunk in enumerate(chunks):
                 point_id = str(uuid.uuid4())
-                embedding = get_embedding(chunk)
                 points.append(
                     models.PointStruct(
                         id=point_id,
-                        vector=embedding,
+                        vector=embeddings[i],
                         payload={
                             "document_id": db_doc.id,
                             "text": chunk,

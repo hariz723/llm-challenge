@@ -210,3 +210,4 @@ __marimo__/
 */logs
 
 .ant
+.python_packages

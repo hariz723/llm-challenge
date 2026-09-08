@@ -2,7 +2,6 @@
 PYTHON = .venv/bin/python
 UV = uv
 
-
 help:
 	@echo "Makefile commands:"
 	@echo "  setup      - Setup project: create .venv and install dependencies"

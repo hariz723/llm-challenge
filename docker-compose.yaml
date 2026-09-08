@@ -9,8 +9,6 @@ services:
       - "8000:8000"
     volumes:
       - ./src:/app/src
-    environment:
-      - POSTGRES_HOST=db
     depends_on:
       - db
       - azurite
@@ -26,9 +24,8 @@ services:
       - azurite_data:/data
 
   ui:
-    build:
-      context: .
-      dockerfile: Dockerfile.ui
+    build: .
+    command: uv run streamlit run src/ui/app.py --server.address=0.0.0.0 --server.port=8501
     container_name: ragapp_ui
     restart: always
     env_file:

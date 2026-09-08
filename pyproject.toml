@@ -24,6 +24,10 @@ dependencies = [
     "auto-mix-prep==0.2.0",
     "requests==2.32.5",
     "sqlalchemy==2.0.45",
+    "pypdf>=6.18.0",
+    "python-docx>=1.2.0",
+    "aiohttp>=3.14.3",
+    "huggingface-hub>=0.29.0",
 ]
 
 [dependency-groups]

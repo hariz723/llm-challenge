@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     LLM_API_KEY: str | None = None
     LLM_MODEL: str | None = None
 
+    # Hugging Face Settings
+    HF_KEY: str | None = None
+    HF_API_KEY: str | None = None
+    HUGGINGFACE_API_KEY: str | None = None
+    HF_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    HF_CHAT_MODEL: str = "meta-llama/Llama-3.2-3B-Instruct"
+
+    @property
+    def HUGGINGFACE_TOKEN(self) -> str | None:
+        return self.HF_KEY or self.HF_API_KEY or self.HUGGINGFACE_API_KEY
+
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"
     )

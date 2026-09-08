@@ -25,7 +25,7 @@ def upload_document(file_obj, token, api_base_url):
         f"{api_base_url}/documents/api/upload",
         headers={"Authorization": f"Bearer {token}"},
         files={"file": (file_obj.name, file_obj.getvalue(), file_obj.type)},
-        timeout=60,
+        timeout=300,
     )
 
 

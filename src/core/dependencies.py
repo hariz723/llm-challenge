@@ -35,8 +35,12 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
 # Azure Storage Dependency
-async def get_azure_storage() -> AzureStorage:
-    return AzureStorage()
+async def get_azure_storage():
+    storage = AzureStorage()
+    try:
+        yield storage
+    finally:
+        await storage.close()
 
 
 AzureStorageDep = Annotated[AzureStorage, Depends(get_azure_storage)]
@@ -53,7 +57,11 @@ DocumentRepositoryDep = Annotated[DocumentRepository, Depends(get_document_repos
 # Qdrant Client Dependency
 @lru_cache(maxsize=1)
 def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(host=settings.QDRANT_HOST, port=int(settings.QDRANT_PORT))
+    return QdrantClient(
+        host=settings.QDRANT_HOST,
+        port=int(settings.QDRANT_PORT),
+        check_compatibility=False,
+    )
 
 
 QdrantClientDep = Annotated[QdrantClient, Depends(get_qdrant_client)]

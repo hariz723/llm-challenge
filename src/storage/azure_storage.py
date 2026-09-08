@@ -61,3 +61,10 @@ class AzureStorage:
         except Exception as e:
             logger.error(f"Error downloading file from Azure Blob Storage: {e}")
             raise
+
+    async def close(self):
+        """Close the underlying Azure BlobServiceClient session."""
+        try:
+            await self.blob_service_client.close()
+        except Exception as e:
+            logger.warning(f"Error closing Azure BlobServiceClient: {e}")

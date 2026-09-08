@@ -27,9 +27,7 @@ app = FastAPI(title="RAG Chat API", version="1.0.0")
 
 app.include_router(api_router)
 
-orgins = [
-    "http://localhost:8501"
-]
+orgins = ["http://localhost:8501"]
 
 
 app.add_middleware(
