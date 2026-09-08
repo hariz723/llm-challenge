@@ -87,7 +87,9 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
             batch_size = 32
             for i in range(0, len(texts), batch_size):
                 batch = texts[i : i + batch_size]
-                emb = client.feature_extraction(batch, model=settings.HF_EMBEDDING_MODEL)
+                emb = client.feature_extraction(
+                    batch, model=settings.HF_EMBEDDING_MODEL
+                )
                 arr = emb if hasattr(emb, "shape") else np.array(emb)
                 if arr.ndim == 3:
                     arr = np.mean(arr, axis=1)

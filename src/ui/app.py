@@ -215,7 +215,13 @@ def initialize_state():
 
 
 def logout():
-    for key in ("token", "user_id", "chat_history", "last_search_results", "indexed_file_ids"):
+    for key in (
+        "token",
+        "user_id",
+        "chat_history",
+        "last_search_results",
+        "indexed_file_ids",
+    ):
         st.session_state.pop(key, None)
     st.rerun()
 
@@ -352,7 +358,9 @@ def sidebar():
                         )
                         if response.status_code == 200:
                             st.session_state.indexed_file_ids.add(file_key)
-                            st.success(f"Indexed **{response.json()['filename']}** successfully.")
+                            st.success(
+                                f"Indexed **{response.json()['filename']}** successfully."
+                            )
                         else:
                             try:
                                 detail = response.json().get("detail", "Upload failed")
