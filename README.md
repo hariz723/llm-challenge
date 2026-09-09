@@ -47,7 +47,7 @@ graph TD
   - **Grounded Q&A Generation:** Answers synthesized with `meta-llama/Llama-3.2-3B-Instruct` (or custom models), citing retrieved chunks inline (`[Source 1]`).
 - **🔍 Vector Retrieval Inspector:** Inspect raw vector similarity matches directly from Qdrant without running LLM synthesis.
 - **🔭 Langfuse Observability & Tracing:** Full end-to-end telemetry across vector search, document embedding extraction, LLM answer generation, token usage, latency, and direct trace links in the UI.
-- **🐳 Unified Docker Architecture:** Single consolidated [Dockerfile](file:///home/hari/projects/llm-challenge/Dockerfile) powering both the API and UI services via Docker Compose command overrides.
+- **🐳 Unified Docker Architecture:** Single consolidated [Dockerfile] powering both the API and UI services via Docker Compose command overrides.
 - **📦 Relational & Blob Persistence:** PostgreSQL for users, document records, and conversations; Azure Blob Storage (or Azurite emulator) for document binaries.
 
 ---
