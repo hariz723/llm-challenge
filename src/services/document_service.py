@@ -272,13 +272,21 @@ class DocumentService:
                             usage_details = None
                             if hasattr(response, "usage") and response.usage:
                                 usage_details = {
-                                    "input": getattr(response.usage, "prompt_tokens", 0) or 0,
-                                    "output": getattr(response.usage, "completion_tokens", 0) or 0,
-                                    "total": getattr(response.usage, "total_tokens", 0) or 0,
+                                    "input": getattr(response.usage, "prompt_tokens", 0)
+                                    or 0,
+                                    "output": getattr(
+                                        response.usage, "completion_tokens", 0
+                                    )
+                                    or 0,
+                                    "total": getattr(response.usage, "total_tokens", 0)
+                                    or 0,
                                 }
                             lf_client.update_current_generation(
                                 model=hf_model,
-                                model_parameters={"temperature": 0.2, "max_tokens": 512},
+                                model_parameters={
+                                    "temperature": 0.2,
+                                    "max_tokens": 512,
+                                },
                                 input=prompt,
                                 output=answer_text,
                                 usage_details=usage_details,
@@ -315,11 +323,15 @@ class DocumentService:
                 raw_answer = payload["choices"][0]["message"]["content"].strip()
                 if lf_client:
                     usage = payload.get("usage") or {}
-                    usage_details = {
-                        "input": usage.get("prompt_tokens", 0),
-                        "output": usage.get("completion_tokens", 0),
-                        "total": usage.get("total_tokens", 0),
-                    } if usage else None
+                    usage_details = (
+                        {
+                            "input": usage.get("prompt_tokens", 0),
+                            "output": usage.get("completion_tokens", 0),
+                            "total": usage.get("total_tokens", 0),
+                        }
+                        if usage
+                        else None
+                    )
                     lf_client.update_current_generation(
                         model=settings.LLM_MODEL,
                         model_parameters={"temperature": 0.2},
@@ -453,7 +465,9 @@ class DocumentService:
             metadata={"query": query},
         ):
             try:
-                return self._search_chunks(query=query, current_user=current_user, top_k=5)
+                return self._search_chunks(
+                    query=query, current_user=current_user, top_k=5
+                )
             except Exception as e:
                 logger.error(f"Error searching documents: {e}")
                 raise HTTPException(status_code=500, detail="Error searching documents")

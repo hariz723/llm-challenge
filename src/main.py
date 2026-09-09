@@ -23,6 +23,7 @@ from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -32,6 +33,7 @@ async def lifespan(app: FastAPI):
     init_langfuse()
     yield
     shutdown_langfuse()
+
 
 app = FastAPI(title="RAG Chat API", version="1.0.0", lifespan=lifespan)
 

@@ -56,15 +56,23 @@ class Settings(BaseSettings):
 
     @property
     def LANGFUSE_CLEAN_PUBLIC_KEY(self) -> str | None:
-        return self.LANGFUSE_PUBLIC_KEY.strip("\"'") if self.LANGFUSE_PUBLIC_KEY else None
+        return (
+            self.LANGFUSE_PUBLIC_KEY.strip("\"'") if self.LANGFUSE_PUBLIC_KEY else None
+        )
 
     @property
     def LANGFUSE_CLEAN_SECRET_KEY(self) -> str | None:
-        return self.LANGFUSE_SECRET_KEY.strip("\"'") if self.LANGFUSE_SECRET_KEY else None
+        return (
+            self.LANGFUSE_SECRET_KEY.strip("\"'") if self.LANGFUSE_SECRET_KEY else None
+        )
 
     @property
     def LANGFUSE_HOST_URL(self) -> str:
-        url = self.LANGFUSE_BASE_URL or self.LANGFUSE_HOST or "https://us.cloud.langfuse.com"
+        url = (
+            self.LANGFUSE_BASE_URL
+            or self.LANGFUSE_HOST
+            or "https://us.cloud.langfuse.com"
+        )
         return url.strip("\"'")
 
     model_config = SettingsConfigDict(
