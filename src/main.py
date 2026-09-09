@@ -19,10 +19,21 @@ try:
 except ImportError:
     from api.router import api_router
 import logging
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="RAG Chat API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        from .core.langfuse_client import init_langfuse, shutdown_langfuse
+    except ImportError:
+        from core.langfuse_client import init_langfuse, shutdown_langfuse
+    init_langfuse()
+    yield
+    shutdown_langfuse()
+
+app = FastAPI(title="RAG Chat API", version="1.0.0", lifespan=lifespan)
 
 
 app.include_router(api_router)

@@ -377,7 +377,8 @@ def sidebar():
             f"""
             <div style="font-size: 0.72rem; color: #64748B;">
                 Endpoint: <code>{API_BASE_URL}</code><br>
-                Model: <code>all-MiniLM-L6-v2</code>
+                Model: <code>all-MiniLM-L6-v2</code><br>
+                Observability: <code>Langfuse</code>
             </div>
             """,
             unsafe_allow_html=True,
@@ -425,6 +426,8 @@ def render_chat_tab():
                             """,
                             unsafe_allow_html=True,
                         )
+            if message.get("trace_url"):
+                st.caption(f"⚡ [View Langfuse Trace]({message['trace_url']})")
 
     query = st.chat_input("Ask a question about your indexed documents...")
     if query:
@@ -462,11 +465,14 @@ def render_chat_tab():
                                 """,
                                 unsafe_allow_html=True,
                             )
+                if payload.get("trace_url"):
+                    st.caption(f"⚡ [View Langfuse Trace]({payload['trace_url']})")
                 st.session_state.chat_history.append(
                     {
                         "role": "assistant",
                         "content": payload["answer"],
                         "sources": payload.get("sources", []),
+                        "trace_url": payload.get("trace_url"),
                     }
                 )
             else:
@@ -547,6 +553,7 @@ def app():
                 <span class="feature-chip">⚡ Embeddings: all-MiniLM-L6-v2</span>
                 <span class="feature-chip">📦 Vector DB: Qdrant</span>
                 <span class="feature-chip">☁️ Storage: Azure Blob</span>
+                <span class="feature-chip">🔭 Observability: Langfuse</span>
             </div>
         </div>
         """,

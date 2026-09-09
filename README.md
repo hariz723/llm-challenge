@@ -28,6 +28,10 @@ graph TD
         API -->|Embeddings & Chat API| HF[Hugging Face Inference API]
         API -.->|Local Fallback| LocalModels[SentenceTransformer / Extractive Fallback]
     end
+
+    subgraph Observability
+        API -->|Traces, Spans & Token Metrics| LF[Langfuse Cloud]
+    end
 ```
 
 ---
@@ -42,8 +46,19 @@ graph TD
   - **Embeddings:** High-throughput batch vectorization using Hugging Face's serverless Inference API with `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) and local fallback.
   - **Grounded Q&A Generation:** Answers synthesized with `meta-llama/Llama-3.2-3B-Instruct` (or custom models), citing retrieved chunks inline (`[Source 1]`).
 - **🔍 Vector Retrieval Inspector:** Inspect raw vector similarity matches directly from Qdrant without running LLM synthesis.
+- **🔭 Langfuse Observability & Tracing:** Full end-to-end telemetry across vector search, document embedding extraction, LLM answer generation, token usage, latency, and direct trace links in the UI.
 - **🐳 Unified Docker Architecture:** Single consolidated [Dockerfile](file:///home/hari/projects/llm-challenge/Dockerfile) powering both the API and UI services via Docker Compose command overrides.
 - **📦 Relational & Blob Persistence:** PostgreSQL for users, document records, and conversations; Azure Blob Storage (or Azurite emulator) for document binaries.
+
+---
+
+## 🔭 Observability & LLM Tracing
+
+Integrated with **Langfuse Cloud** for real-time monitoring of RAG execution graphs, retrieval steps, token usage, and latency:
+
+<p align="center">
+  <img src="images/image copy.png" alt="Langfuse Observability & Tracing Dashboard" width="100%" />
+</p>
 
 ---
 
@@ -88,6 +103,11 @@ QDRANT_PORT=6333
 HF_API_KEY=hf_your_huggingface_api_token
 HF_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 HF_CHAT_MODEL=meta-llama/Llama-3.2-3B-Instruct
+
+# Langfuse Observability
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://us.cloud.langfuse.com
 ```
 
 ### 3. Launch the Stack

@@ -44,7 +44,28 @@ class Settings(BaseSettings):
 
     @property
     def HUGGINGFACE_TOKEN(self) -> str | None:
-        return self.HF_KEY or self.HF_API_KEY or self.HUGGINGFACE_API_KEY
+        token = self.HF_KEY or self.HF_API_KEY or self.HUGGINGFACE_API_KEY
+        return token.strip("\"'") if token else None
+
+    # Langfuse Observability Settings
+    LANGFUSE_SECRET_KEY: str | None = None
+    LANGFUSE_PUBLIC_KEY: str | None = None
+    LANGFUSE_BASE_URL: str | None = "https://us.cloud.langfuse.com"
+    LANGFUSE_HOST: str | None = None
+    LANGFUSE_TRACING_ENABLED: bool = True
+
+    @property
+    def LANGFUSE_CLEAN_PUBLIC_KEY(self) -> str | None:
+        return self.LANGFUSE_PUBLIC_KEY.strip("\"'") if self.LANGFUSE_PUBLIC_KEY else None
+
+    @property
+    def LANGFUSE_CLEAN_SECRET_KEY(self) -> str | None:
+        return self.LANGFUSE_SECRET_KEY.strip("\"'") if self.LANGFUSE_SECRET_KEY else None
+
+    @property
+    def LANGFUSE_HOST_URL(self) -> str:
+        url = self.LANGFUSE_BASE_URL or self.LANGFUSE_HOST or "https://us.cloud.langfuse.com"
+        return url.strip("\"'")
 
     model_config = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_nested_delimiter="__", extra="ignore"

@@ -17,6 +17,8 @@ from sentence_transformers import SentenceTransformer
 import core.constants as cons
 from ..core.config import settings
 import requests
+from langfuse import observe, propagate_attributes
+from ..core.langfuse_client import get_langfuse
 
 
 @lru_cache(maxsize=1)
@@ -76,10 +78,12 @@ def chunk_text(text: str) -> List[str]:
     return [chunk for chunk in chunks if chunk]
 
 
+@observe(name="generate_embeddings", as_type="embedding")
 def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     if not texts:
         return []
 
+    lf_client = get_langfuse()
     client = get_hf_client()
     if client:
         try:
@@ -96,6 +100,14 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
                 elif arr.ndim == 1:
                     arr = arr.reshape(1, -1)
                 all_vectors.extend(arr.tolist())
+            if lf_client:
+                lf_client.update_current_span(
+                    metadata={
+                        "model": settings.HF_EMBEDDING_MODEL,
+                        "count": len(texts),
+                        "backend": "huggingface",
+                    }
+                )
             return [[float(x) for x in v] for v in all_vectors]
         except Exception as e:
             logger.warning(
@@ -103,6 +115,14 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
             )
 
     encoded = embedding_model.encode(texts, batch_size=32, show_progress_bar=False)
+    if lf_client:
+        lf_client.update_current_span(
+            metadata={
+                "model": cons.EMBEDDING_MODEL_NAME,
+                "count": len(texts),
+                "backend": "local_sentence_transformers",
+            }
+        )
     return [[float(x) for x in v] for v in encoded.tolist()]
 
 
@@ -135,13 +155,32 @@ class DocumentService:
                 ),
             )
 
+    def _get_trace_info(self) -> tuple[str | None, str | None]:
+        trace_id = None
+        trace_url = None
+        client = get_langfuse()
+        if client:
+            try:
+                trace_id = client.get_current_trace_id()
+                if trace_id:
+                    trace_url = client.get_trace_url(trace_id=trace_id)
+            except Exception as exc:
+                logger.debug(f"Could not retrieve Langfuse trace info: {exc}")
+        return trace_id, trace_url
+
+    @observe(name="retrieve_context", as_type="retriever")
     def _search_chunks(
         self, query: str, current_user: AuthenticatedUser, top_k: int = 5
     ) -> List[DocumentSearchResponse]:
         collection_name = str(current_user.id)
+        lf_client = get_langfuse()
         try:
             self.qdrant_client.get_collection(collection_name=collection_name)
         except Exception:
+            if lf_client:
+                lf_client.update_current_span(
+                    metadata={"collection_found": False, "hits_count": 0}
+                )
             return []
 
         query_embedding = get_embedding(query)
@@ -172,8 +211,19 @@ class DocumentService:
                     score=hit.score,
                 )
             )
+
+        if lf_client:
+            lf_client.update_current_span(
+                metadata={
+                    "collection": collection_name,
+                    "top_k": top_k,
+                    "hits_count": len(results),
+                    "top_score": results[0].score if results else None,
+                }
+            )
         return results
 
+    @observe(name="generate_answer_with_llm", as_type="generation")
     def _generate_answer_with_llm(
         self, query: str, search_results: List[DocumentSearchResponse]
     ) -> str | None:
@@ -190,6 +240,8 @@ class DocumentService:
             f"Question: {query}\n\n"
             f"Sources:\n\n{'\n\n'.join(context_blocks)}"
         )
+
+        lf_client = get_langfuse()
 
         # 1. Try Hugging Face Inference if token is configured
         client = get_hf_client()
@@ -215,7 +267,23 @@ class DocumentService:
                 if response and response.choices:
                     content = response.choices[0].message.content
                     if content:
-                        return content.strip()
+                        answer_text = content.strip()
+                        if lf_client:
+                            usage_details = None
+                            if hasattr(response, "usage") and response.usage:
+                                usage_details = {
+                                    "input": getattr(response.usage, "prompt_tokens", 0) or 0,
+                                    "output": getattr(response.usage, "completion_tokens", 0) or 0,
+                                    "total": getattr(response.usage, "total_tokens", 0) or 0,
+                                }
+                            lf_client.update_current_generation(
+                                model=hf_model,
+                                model_parameters={"temperature": 0.2, "max_tokens": 512},
+                                input=prompt,
+                                output=answer_text,
+                                usage_details=usage_details,
+                            )
+                        return answer_text
             except Exception as e:
                 logger.error(f"Hugging Face chat completion failed: {e}")
 
@@ -244,20 +312,51 @@ class DocumentService:
                 )
                 response.raise_for_status()
                 payload = response.json()
-                return payload["choices"][0]["message"]["content"].strip()
+                raw_answer = payload["choices"][0]["message"]["content"].strip()
+                if lf_client:
+                    usage = payload.get("usage") or {}
+                    usage_details = {
+                        "input": usage.get("prompt_tokens", 0),
+                        "output": usage.get("completion_tokens", 0),
+                        "total": usage.get("total_tokens", 0),
+                    } if usage else None
+                    lf_client.update_current_generation(
+                        model=settings.LLM_MODEL,
+                        model_parameters={"temperature": 0.2},
+                        input=prompt,
+                        output=raw_answer,
+                        usage_details=usage_details,
+                    )
+                return raw_answer
             except Exception as e:
                 logger.error(f"Custom LLM API request failed: {e}")
 
+        if lf_client:
+            lf_client.update_current_generation(
+                level="WARNING",
+                status_message="LLM synthesis unavailable or returned empty; using fallback.",
+            )
+
         return None
 
+    @observe(name="generate_fallback_answer", as_type="generation")
     def _generate_fallback_answer(
         self, query: str, search_results: List[DocumentSearchResponse]
     ) -> str:
+        lf_client = get_langfuse()
         if not search_results:
-            return (
+            msg = (
                 "I couldn't find any relevant document context for that question yet. "
                 "Upload a document first or try a more specific query."
             )
+            if lf_client:
+                lf_client.update_current_generation(
+                    model="extractive_fallback",
+                    input=query,
+                    output=msg,
+                    metadata={"results_count": 0},
+                )
+            return msg
 
         lines = []
         for idx, result in enumerate(search_results[:3], start=1):
@@ -265,120 +364,156 @@ class DocumentService:
             excerpt = excerpt[:280].rstrip()
             lines.append(f"[Source {idx}] {excerpt}")
 
-        return (
+        ans = (
             f"Based on the retrieved document chunks, the most relevant information for "
             f"'{query}' is:\n\n" + "\n\n".join(lines)
         )
-
-    async def upload_document(self, file: UploadFile, current_user: AuthenticatedUser):
-        try:
-
-            blob_url = await self.azure_storage.upload_file(file, str(uuid.uuid4()))
-
-            await file.seek(0)
-            content = await file.read()
-
-            text = extract_text_from_file(content, file.filename)
-            if not text.strip():
-                raise HTTPException(
-                    status_code=400, detail="Could not extract text from file"
-                )
-
-            chunks = chunk_text(text)
-            collection_name = str(current_user.id)
-            self._get_or_create_collection(collection_name)
-
-            # Use the repository to create the document first to get its ID
-            db_doc = await self.document_repository.create_document(
-                filename=file.filename,
-                user_id=current_user.id,
-                blob_url=blob_url,
+        if lf_client:
+            lf_client.update_current_generation(
+                model="extractive_fallback",
+                input=query,
+                output=ans,
+                metadata={
+                    "strategy": "top_chunks_extraction",
+                    "chunk_count": len(search_results[:3]),
+                },
             )
+        return ans
 
-            embeddings = get_embeddings_batch(chunks)
-            points = []
-            for i, chunk in enumerate(chunks):
-                point_id = str(uuid.uuid4())
-                points.append(
-                    models.PointStruct(
-                        id=point_id,
-                        vector=embeddings[i],
-                        payload={
-                            "document_id": db_doc.id,
-                            "text": chunk,
-                            "filename": file.filename,
-                            "chunk_id": i,
-                            "blob_url": blob_url,
-                        },
+    @observe(name="document_upload_pipeline")
+    async def upload_document(self, file: UploadFile, current_user: AuthenticatedUser):
+        with propagate_attributes(
+            user_id=str(current_user.id),
+            tags=["upload", "ingestion"],
+            metadata={"filename": file.filename},
+        ):
+            try:
+                blob_url = await self.azure_storage.upload_file(file, str(uuid.uuid4()))
+
+                await file.seek(0)
+                content = await file.read()
+
+                text = extract_text_from_file(content, file.filename)
+                if not text.strip():
+                    raise HTTPException(
+                        status_code=400, detail="Could not extract text from file"
                     )
+
+                chunks = chunk_text(text)
+                collection_name = str(current_user.id)
+                self._get_or_create_collection(collection_name)
+
+                # Use the repository to create the document first to get its ID
+                db_doc = await self.document_repository.create_document(
+                    filename=file.filename,
+                    user_id=current_user.id,
+                    blob_url=blob_url,
                 )
 
-            if points:
-                self.qdrant_client.upsert(
-                    collection_name=collection_name,
-                    points=points,
-                    wait=True,
-                )
+                embeddings = get_embeddings_batch(chunks)
+                points = []
+                for i, chunk in enumerate(chunks):
+                    point_id = str(uuid.uuid4())
+                    points.append(
+                        models.PointStruct(
+                            id=point_id,
+                            vector=embeddings[i],
+                            payload={
+                                "document_id": db_doc.id,
+                                "text": chunk,
+                                "filename": file.filename,
+                                "chunk_id": i,
+                                "blob_url": blob_url,
+                            },
+                        )
+                    )
 
-            return db_doc
+                if points:
+                    self.qdrant_client.upsert(
+                        collection_name=collection_name,
+                        points=points,
+                        wait=True,
+                    )
 
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error uploading document: {e}")
-            raise HTTPException(status_code=500, detail="Error processing document")
+                return db_doc
 
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error uploading document: {e}")
+                raise HTTPException(status_code=500, detail="Error processing document")
+
+    @observe(name="search_documents_pipeline")
     async def search_documents(
         self, query: str, current_user: AuthenticatedUser
     ) -> List[DocumentSearchResponse]:
-        try:
-            return self._search_chunks(query=query, current_user=current_user, top_k=5)
-        except Exception as e:
-            logger.error(f"Error searching documents: {e}")
-            raise HTTPException(status_code=500, detail="Error searching documents")
+        with propagate_attributes(
+            user_id=str(current_user.id),
+            tags=["vector_search"],
+            metadata={"query": query},
+        ):
+            try:
+                return self._search_chunks(query=query, current_user=current_user, top_k=5)
+            except Exception as e:
+                logger.error(f"Error searching documents: {e}")
+                raise HTTPException(status_code=500, detail="Error searching documents")
 
+    @observe(name="rag_chat_pipeline")
     async def answer_question(
         self, query: str, current_user: AuthenticatedUser, top_k: int = 5
     ) -> RAGChatResponse:
-        try:
-            search_results = self._search_chunks(
-                query=query, current_user=current_user, top_k=top_k
-            )
-            answer = self._generate_answer_with_llm(query, search_results)
-            if not answer:
-                answer = self._generate_fallback_answer(query, search_results)
+        with propagate_attributes(
+            user_id=str(current_user.id),
+            tags=["rag", "chat"],
+            metadata={"top_k": top_k, "query": query},
+        ):
+            try:
+                search_results = self._search_chunks(
+                    query=query, current_user=current_user, top_k=top_k
+                )
+                answer = self._generate_answer_with_llm(query, search_results)
+                if not answer:
+                    answer = self._generate_fallback_answer(query, search_results)
 
-            return RAGChatResponse(
-                answer=answer,
-                sources=[
-                    RAGSource(
-                        document_id=result.document_id,
-                        filename=result.filename,
-                        blob_url=result.blob_url,
-                        text=result.text,
-                        score=result.score,
-                    )
-                    for result in search_results
-                ],
-            )
-        except requests.RequestException as exc:
-            logger.warning(f"LLM generation failed, using fallback answer: {exc}")
-            search_results = self._search_chunks(
-                query=query, current_user=current_user, top_k=top_k
-            )
-            return RAGChatResponse(
-                answer=self._generate_fallback_answer(query, search_results),
-                sources=[
-                    RAGSource(
-                        document_id=result.document_id,
-                        filename=result.filename,
-                        blob_url=result.blob_url,
-                        text=result.text,
-                        score=result.score,
-                    )
-                    for result in search_results
-                ],
-            )
-        except Exception as e:
-            logger.error(f"Error answering question: {e}")
-            raise HTTPException(status_code=500, detail="Error generating answer")
+                trace_id, trace_url = self._get_trace_info()
+
+                return RAGChatResponse(
+                    answer=answer,
+                    sources=[
+                        RAGSource(
+                            document_id=result.document_id,
+                            filename=result.filename,
+                            blob_url=result.blob_url,
+                            text=result.text,
+                            score=result.score,
+                        )
+                        for result in search_results
+                    ],
+                    trace_id=trace_id,
+                    trace_url=trace_url,
+                )
+            except requests.RequestException as exc:
+                logger.warning(f"LLM generation failed, using fallback answer: {exc}")
+                search_results = self._search_chunks(
+                    query=query, current_user=current_user, top_k=top_k
+                )
+                fallback_ans = self._generate_fallback_answer(query, search_results)
+                trace_id, trace_url = self._get_trace_info()
+                return RAGChatResponse(
+                    answer=fallback_ans,
+                    sources=[
+                        RAGSource(
+                            document_id=result.document_id,
+                            filename=result.filename,
+                            blob_url=result.blob_url,
+                            text=result.text,
+                            score=result.score,
+                        )
+                        for result in search_results
+                    ],
+                    trace_id=trace_id,
+                    trace_url=trace_url,
+                )
+            except Exception as e:
+                logger.error(f"Error answering question: {e}")
+                raise HTTPException(status_code=500, detail="Error generating answer")

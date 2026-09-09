@@ -41,3 +41,5 @@ class RAGSource(BaseModel):
 class RAGChatResponse(BaseModel):
     answer: str
     sources: List[RAGSource]
+    trace_id: str | None = None
+    trace_url: str | None = None
